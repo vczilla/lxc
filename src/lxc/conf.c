@@ -3975,6 +3975,7 @@ void lxc_conf_free(struct lxc_conf *conf)
 	free(conf->init_groups.list);
 	free(conf->init_cwd);
 	free(conf->unexpanded_config);
+#undef syslog
 	free(conf->syslog);
 	lxc_free_networks(&conf->network);
 	free(conf->lsm_aa_profile);

@@ -162,3 +162,4 @@ TAGS
 
 doc/api/doxygen_sqlite3.db
 doc/api/*.tmp
+build

@@ -296,7 +296,7 @@ if [ "${OCI_USE_CACHE}" = "true" ]; then
     DOWNLOAD_BASE="${LOCALSTATEDIR}/cache/lxc"
   fi
 else
-  DOWNLOAD_BASE=/tmp
+  DOWNLOAD_BASE=@TERMUX_PREFIX@/tmp
 fi
 mkdir -p "${DOWNLOAD_BASE}"
 

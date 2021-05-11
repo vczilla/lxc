@@ -573,7 +573,7 @@ static bool cpuset1_cpus_initialize(int dfd_parent, int dfd_child,
 	ssize_t maxisol = 0, maxoffline = 0, maxposs = 0;
 	bool flipped_bit = false;
 
-	posscpus = read_file_at(dfd_parent, "cpuset.cpus", PROTECT_OPEN, 0);
+	posscpus = read_file_at(dfd_parent, "cpus", PROTECT_OPEN, 0);
 	if (!posscpus)
 		return log_error_errno(false, errno, "Failed to read file \"%s\"", fpath);
 
@@ -663,9 +663,9 @@ static bool cpuset1_cpus_initialize(int dfd_parent, int dfd_child,
 
 copy_parent:
 	if (!am_initialized) {
-		ret = lxc_writeat(dfd_child, "cpuset.cpus", cpulist, strlen(cpulist));
+		ret = lxc_writeat(dfd_child, "cpus", cpulist, strlen(cpulist));
 		if (ret < 0)
-			return log_error_errno(false, errno, "Failed to write cpu list to \"%d/cpuset.cpus\"", dfd_child);
+			return log_error_errno(false, errno, "Failed to write cpu list to \"%d/cpus\"", dfd_child);
 
 		TRACE("Copied cpu settings of parent cgroup");
 	}
@@ -688,21 +688,21 @@ static bool cpuset1_initialize(int dfd_base, int dfd_next)
 		return syserror_ret(false, "Failed to read file %d(cgroup.clone_children)", dfd_base);
 
 	/*
-	* Initialize cpuset.cpus and make remove any isolated
+	* Initialize cpus and make remove any isolated
 	* and offline cpus.
 	 */
 	if (!cpuset1_cpus_initialize(dfd_base, dfd_next, v == '1'))
-		return syserror_ret(false, "Failed to initialize cpuset.cpus");
+		return syserror_ret(false, "Failed to initialize cpus");
 
-	/* Read cpuset.mems from parent... */
-	bytes = lxc_readat(dfd_base, "cpuset.mems", mems, sizeof(mems));
+	/* Read mems from parent... */
+	bytes = lxc_readat(dfd_base, "mems", mems, sizeof(mems));
 	if (bytes < 0)
-		return syserror_ret(false, "Failed to read file %d(cpuset.mems)", dfd_base);
+		return syserror_ret(false, "Failed to read file %d(mems)", dfd_base);
 
 	/* ... and copy to first cgroup in the tree... */
-	bytes = lxc_writeat(dfd_next, "cpuset.mems", mems, bytes);
+	bytes = lxc_writeat(dfd_next, "mems", mems, bytes);
 	if (bytes < 0)
-		return syserror_ret(false, "Failed to write %d(cpuset.mems)", dfd_next);
+		return syserror_ret(false, "Failed to write %d(mems)", dfd_next);
 
 	/* ... and finally turn on cpuset inheritance. */
 	bytes = lxc_writeat(dfd_next, "cgroup.clone_children", "1", 1);

@@ -150,7 +150,7 @@ echo "Unpacking the rootfs"
 
 # Create temporary directory to
 if ! command -V mktemp >/dev/null 2>&1; then
-  LOCAL_TEMP=/tmp/lxc-local.$$
+  LOCAL_TEMP=@TERMUX_PREFIX@/tmp/lxc-local.$$
   mkdir -p "${LOCAL_TEMP}"
 else
   LOCAL_TEMP=$(mktemp -d)
