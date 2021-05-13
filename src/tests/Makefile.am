@@ -19,6 +19,11 @@ if ENABLE_SELINUX
 LSM_SOURCES += ../lxc/lsm/selinux.c
 endif
 
+lxc_test_arch_parse_SOURCES = arch_parse.c \
+			      lxctest.h \
+			      ../lxc/lxc.h \
+			      ../lxc/memory_utils.h
+
 lxc_test_api_reboot_SOURCES = api_reboot.c \
 			      ../lxc/af_unix.c ../lxc/af_unix.h \
 			      ../lxc/caps.c ../lxc/caps.h \
@@ -67,6 +72,10 @@ lxc_test_api_reboot_SOURCES = api_reboot.c \
 			      $(LSM_SOURCES)
 if ENABLE_SECCOMP
 lxc_test_api_reboot_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
+endif
+
+if !HAVE_STRCHRNUL
+lxc_test_api_reboot_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
 endif
 
 lxc_test_apparmor_SOURCES = aa.c \
@@ -119,6 +128,10 @@ if ENABLE_SECCOMP
 lxc_test_apparmor_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
 
+if !HAVE_STRCHRNUL
+lxc_test_apparmor_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_attach_SOURCES = attach.c \
 			  ../lxc/af_unix.c ../lxc/af_unix.h \
 			  ../lxc/caps.c ../lxc/caps.h \
@@ -167,6 +180,10 @@ lxc_test_attach_SOURCES = attach.c \
 			  $(LSM_SOURCES)
 if ENABLE_SECCOMP
 lxc_test_attach_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
+endif
+
+if !HAVE_STRCHRNUL
+lxc_test_attach_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
 endif
 
 lxc_test_basic_SOURCES = basic.c
@@ -220,6 +237,10 @@ if ENABLE_SECCOMP
 lxc_test_cgpath_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
 
+if !HAVE_STRCHRNUL
+lxc_test_cgpath_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_clonetest_SOURCES = clonetest.c
 lxc_test_concurrent_SOURCES = concurrent.c
 lxc_test_config_jump_table_SOURCES = config_jump_table.c \
@@ -271,6 +292,10 @@ lxc_test_config_jump_table_SOURCES = config_jump_table.c \
 				     $(LSM_SOURCES)
 if ENABLE_SECCOMP
 lxc_test_config_jump_table_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
+endif
+
+if !HAVE_STRCHRNUL
+lxc_test_config_jump_table_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
 endif
 
 lxc_test_console_SOURCES = console.c
@@ -329,6 +354,11 @@ lxc_test_device_add_remove_SOURCES = device_add_remove.c \
 if ENABLE_SECCOMP
 lxc_test_device_add_remove_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
+
+if !HAVE_STRCHRNUL
+lxc_test_device_add_remove_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_getkeys_SOURCES = getkeys.c
 lxc_test_get_item_SOURCES = get_item.c \
 			    ../lxc/af_unix.c ../lxc/af_unix.h \
@@ -379,6 +409,11 @@ lxc_test_get_item_SOURCES = get_item.c \
 if ENABLE_SECCOMP
 lxc_test_get_item_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
+
+if !HAVE_STRCHRNUL
+lxc_test_get_item_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_list_SOURCES = list.c
 lxc_test_locktests_SOURCES = locktests.c \
 			     ../lxc/af_unix.c ../lxc/af_unix.h \
@@ -428,6 +463,10 @@ lxc_test_locktests_SOURCES = locktests.c \
 			     $(LSM_SOURCES)
 if ENABLE_SECCOMP
 lxc_test_locktests_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
+endif
+
+if !HAVE_STRCHRNUL
+lxc_test_locktests_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
 endif
 
 lxc_test_lxcpath_SOURCES = lxcpath.c
@@ -483,6 +522,10 @@ if ENABLE_SECCOMP
 lxc_test_mount_injection_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
 
+if !HAVE_STRCHRNUL
+lxc_test_mount_injection_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_parse_config_file_SOURCES = parse_config_file.c \
 				     lxctest.h \
 				     ../lxc/af_unix.c ../lxc/af_unix.h \
@@ -534,6 +577,10 @@ if ENABLE_SECCOMP
 lxc_test_parse_config_file_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
 
+if !HAVE_STRCHRNUL
+lxc_test_parse_config_file_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 lxc_test_raw_clone_SOURCES = lxc_raw_clone.c \
 			     lxctest.h \
 			     ../lxc/af_unix.c ../lxc/af_unix.h \
@@ -583,6 +630,10 @@ lxc_test_raw_clone_SOURCES = lxc_raw_clone.c \
 			     $(LSM_SOURCES)
 if ENABLE_SECCOMP
 lxc_test_raw_clone_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
+endif
+
+if !HAVE_STRCHRNUL
+lxc_test_raw_clone_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
 endif
 
 lxc_test_reboot_SOURCES = reboot.c
@@ -650,6 +701,10 @@ if ENABLE_SECCOMP
 lxc_test_utils_SOURCES += ../lxc/seccomp.c ../lxc/lxcseccomp.h
 endif
 
+if !HAVE_STRCHRNUL
+lxc_test_utils_SOURCES += ../include/strchrnul.c ../include/strchrnul.h
+endif
+
 AM_CFLAGS += -DLXCROOTFSMOUNT=\"$(LXCROOTFSMOUNT)\" \
 	     -DLXCPATH=\"$(LXCPATH)\" \
 	     -DLXC_GLOBAL_CONF=\"$(LXC_GLOBAL_CONF)\" \
@@ -684,6 +739,7 @@ endif
 
 bin_PROGRAMS = lxc-test-api-reboot \
 	       lxc-test-apparmor \
+	       lxc-test-arch-parse \
 	       lxc-test-attach \
 	       lxc-test-basic \
 	       lxc-test-cgpath \
@@ -741,9 +797,41 @@ bin_SCRIPTS += lxc-test-lxc-attach \
 endif
 endif
 
+if ENABLE_FUZZERS
+LIB_FUZZING_ENGINE ?= -fsanitize=fuzzer
+
+# https://google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements
+nodist_EXTRA_fuzz_lxc_config_read_SOURCES = dummy.cxx
+fuzz_lxc_config_read_SOURCES = fuzz-lxc-config-read.c
+fuzz_lxc_config_read_CFLAGS = $(AM_CFLAGS)
+fuzz_lxc_config_read_CXXFLAGS = $(AM_CFLAGS)
+fuzz_lxc_config_read_LDFLAGS = $(AM_LDFLAGS) -static
+fuzz_lxc_config_read_LDADD = $(LDADD) $(LIB_FUZZING_ENGINE)
+
+nodist_EXTRA_fuzz_lxc_define_load_SOURCES = dummy.cxx
+fuzz_lxc_define_load_SOURCES = fuzz-lxc-define-load.c
+fuzz_lxc_define_load_CFLAGS = $(AM_CFLAGS)
+fuzz_lxc_define_load_CXXFLAGS = $(AM_CFLAGS)
+fuzz_lxc_define_load_LDFLAGS = $(AM_LDFLAGS) -static
+fuzz_lxc_define_load_LDADD = $(LDADD) $(LIB_FUZZING_ENGINE)
+
+nodist_EXTRA_fuzz_lxc_cgroup_init_SOURCES = dummy.cxx
+fuzz_lxc_cgroup_init_SOURCES = fuzz-lxc-cgroup-init.c
+fuzz_lxc_cgroup_init_CFLAGS = $(AM_CFLAGS)
+fuzz_lxc_cgroup_init_CXXFLAGS = $(AM_CFLAGS)
+fuzz_lxc_cgroup_init_LDFLAGS = $(AM_LDFLAGS) -static
+fuzz_lxc_cgroup_init_LDADD = $(LDADD) $(LIB_FUZZING_ENGINE)
+
+bin_PROGRAMS += fuzz-lxc-cgroup-init \
+		fuzz-lxc-config-read \
+		fuzz-lxc-define-load
+
+bin_SCRIPTS += lxc-test-fuzzers
+endif
 endif
 
-EXTRA_DIST = basic.c \
+EXTRA_DIST = arch_parse.c \
+	     basic.c \
 	     cgpath.c \
 	     clonetest.c \
 	     concurrent.c \

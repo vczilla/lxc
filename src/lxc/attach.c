@@ -48,10 +48,6 @@
 #include "terminal.h"
 #include "utils.h"
 
-#if HAVE_SYS_PERSONALITY_H
-#include <sys/personality.h>
-#endif
-
 lxc_log_define(attach, lxc);
 
 /* Define default options if no options are supplied by the user. */
@@ -99,7 +95,7 @@ struct attach_context {
 	uid_t target_host_gid;
 	char *lsm_label;
 	struct lxc_container *container;
-	signed long personality;
+	personality_t personality;
 	unsigned long long capability_mask;
 	int ns_inherited;
 	int ns_fd[LXC_NS_MAX];
@@ -181,10 +177,12 @@ static struct attach_context *alloc_attach_context(void)
 	if (!ctx)
 		return ret_set_errno(NULL, ENOMEM);
 
+	ctx->init_pid		= -ESRCH;
+
 	ctx->dfd_self_pid	= -EBADF;
 	ctx->dfd_init_pid	= -EBADF;
 	ctx->init_pidfd		= -EBADF;
-	ctx->init_pid		= -ESRCH;
+
 	ctx->setup_ns_uid	= LXC_INVALID_UID;
 	ctx->setup_ns_gid	= LXC_INVALID_GID;
 	ctx->target_ns_uid	= LXC_INVALID_UID;
@@ -192,16 +190,17 @@ static struct attach_context *alloc_attach_context(void)
 	ctx->target_host_uid	= LXC_INVALID_UID;
 	ctx->target_host_gid	= LXC_INVALID_GID;
 
-	for (int i = 0; i < LXC_NS_MAX; i++)
+	for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++)
 		ctx->ns_fd[i] = -EBADF;
 
 	return ctx;
 }
 
 static int get_personality(const char *name, const char *lxcpath,
-			   signed long *personality)
+			   personality_t *personality)
 {
 	__do_free char *p = NULL;
+	int ret;
 	signed long per;
 
 	p = lxc_cmd_get_config_item(name, "lxc.arch", lxcpath);
@@ -210,9 +209,9 @@ static int get_personality(const char *name, const char *lxcpath,
 		return 0;
 	}
 
-	per = lxc_config_parse_arch(p);
-	if (per == LXC_ARCH_UNCHANGED)
-		return ret_errno(EINVAL);
+	ret = lxc_config_parse_arch(p, &per);
+	if (ret < 0)
+		return syserror("Failed to parse personality");
 
 	*personality = per;
 	return 0;
@@ -436,7 +435,7 @@ static int get_attach_context(struct attach_context *ctx,
 		if (options->namespaces == -1)
 			return log_error_errno(-EINVAL, EINVAL, "Failed to automatically determine the namespaces which the container uses");
 
-		for (int i = 0; i < LXC_NS_MAX; i++) {
+		for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++) {
 			if (ns_info[i].clone_flag & CLONE_NEWCGROUP)
 				if (!(options->attach_flags & LXC_ATTACH_MOVE_TO_CGROUP) ||
 				    !cgns_supported())
@@ -531,7 +530,7 @@ static int same_ns(int dfd_pid1, int dfd_pid2, const char *ns_path)
 
 static int __prepare_namespaces_pidfd(struct attach_context *ctx)
 {
-	for (int i = 0; i < LXC_NS_MAX; i++) {
+	for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++) {
 		int ret;
 
 		ret = same_nsfd(ctx->dfd_self_pid,
@@ -559,8 +558,8 @@ static int __prepare_namespaces_pidfd(struct attach_context *ctx)
 static int __prepare_namespaces_nsfd(struct attach_context *ctx,
 				     lxc_attach_options_t *options)
 {
-	for (int i = 0; i < LXC_NS_MAX; i++) {
-		int j;
+	for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++) {
+		lxc_namespace_t j;
 
 		if (options->namespaces & ns_info[i].clone_flag)
 			ctx->ns_fd[i] = open_at(ctx->dfd_init_pid,
@@ -642,7 +641,7 @@ static int __attach_namespaces_nsfd(struct attach_context *ctx,
 {
 	int fret = 0;
 
-	for (int i = 0; i < LXC_NS_MAX; i++) {
+	for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++) {
 		int ret;
 
 		if (ctx->ns_fd[i] < 0)
@@ -670,7 +669,7 @@ static int attach_namespaces(struct attach_context *ctx,
 			     lxc_attach_options_t *options)
 {
 	if (lxc_log_trace()) {
-		for (int i = 0; i < LXC_NS_MAX; i++) {
+		for (lxc_namespace_t i = 0; i < LXC_NS_MAX; i++) {
 			if (ns_info[i].clone_flag & options->namespaces) {
 				TRACE("Attaching to %s namespace", ns_info[i].proc_name);
 				continue;
@@ -1145,24 +1144,22 @@ __noreturn static void do_attach(struct attach_payload *ap)
 	}
 
 	/* Now perform additional attachments. */
-#if HAVE_SYS_PERSONALITY_H
 	if (options->attach_flags & LXC_ATTACH_SET_PERSONALITY) {
 		long new_personality;
 
-		if (options->personality < 0)
+		if (options->personality == LXC_ATTACH_DETECT_PERSONALITY)
 			new_personality = ctx->personality;
 		else
 			new_personality = options->personality;
 
 		if (new_personality != LXC_ARCH_UNCHANGED) {
-			ret = personality(new_personality);
+			ret = lxc_personality(new_personality);
 			if (ret < 0)
 				goto on_error;
 
 			TRACE("Set new personality");
 		}
 	}
-#endif
 
 	if (options->attach_flags & LXC_ATTACH_DROP_CAPABILITIES) {
 		ret = drop_capabilities(ctx);

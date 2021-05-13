@@ -39,10 +39,6 @@
 #include "storage/storage.h"
 #include "utils.h"
 
-#if HAVE_SYS_PERSONALITY_H
-#include <sys/personality.h>
-#endif
-
 #ifndef HAVE_STRLCPY
 #include "include/strlcpy.h"
 #endif
@@ -1392,14 +1388,14 @@ static int set_config_hooks_version(const char *key, const char *value,
 static int set_config_personality(const char *key, const char *value,
 				  struct lxc_conf *lxc_conf, void *data)
 {
-	signed long personality;
+	int ret;
+	personality_t personality;
 
-	personality = lxc_config_parse_arch(value);
-	if (personality >= 0)
-		lxc_conf->personality = personality;
-	else
-		WARN("Unsupported personality \"%s\"", value);
+	ret = lxc_config_parse_arch(value, &personality);
+	if (ret < 0)
+		return syserror("Unsupported personality \"%s\"", value);
 
+	lxc_conf->personality = personality;
 	return 0;
 }
 
@@ -2790,30 +2786,41 @@ static int set_config_rootfs_mount(const char *key, const char *value,
 static int set_config_rootfs_options(const char *key, const char *value,
 				     struct lxc_conf *lxc_conf, void *data)
 {
-	__do_free char *mdata = NULL, *opts = NULL;
-	unsigned long mflags = 0, pflags = 0;
+	__do_free char *dup = NULL, *mdata = NULL, *opts = NULL;
 	struct lxc_rootfs *rootfs = &lxc_conf->rootfs;
+	struct lxc_mount_options *mnt_opts = &rootfs->mnt_opts;
 	int ret;
 
 	clr_config_rootfs_options(key, lxc_conf, data);
 	if (lxc_config_value_empty(value))
 		return 0;
 
-	ret = parse_mntopts(value, &mflags, &mdata);
+	dup = strdup(value);
+	if (!dup)
+		return -ENOMEM;
+
+	ret = parse_lxc_mntopts(mnt_opts, dup);
+	if (ret < 0)
+		return ret;
+
+	ret = parse_mntopts(dup, &mnt_opts->mnt_flags, &mdata);
 	if (ret < 0)
 		return ret_errno(EINVAL);
 
-	ret = parse_propagationopts(value, &pflags);
+	ret = parse_propagationopts(dup, &mnt_opts->prop_flags);
 	if (ret < 0)
 		return ret_errno(EINVAL);
 
-	ret = set_config_string_item(&opts, value);
+	ret = set_config_string_item(&opts, dup);
 	if (ret < 0)
 		return ret_errno(ENOMEM);
 
-	rootfs->mountflags	= mflags | pflags;
+	if (mnt_opts->create_dir || mnt_opts->create_file ||
+	    mnt_opts->optional || mnt_opts->relative)
+		return syserror_set(-EINVAL, "Invalid LXC specifc mount option for rootfs mount");
+
+	mnt_opts->data		= move_ptr(mdata);
 	rootfs->options		= move_ptr(opts);
-	rootfs->data		= move_ptr(mdata);
 
 	return 0;
 }
@@ -3202,10 +3209,9 @@ void lxc_config_define_free(struct lxc_list *defines)
 	}
 }
 
-signed long lxc_config_parse_arch(const char *arch)
+int lxc_config_parse_arch(const char *arch, signed long *persona)
 {
-#if HAVE_SYS_PERSONALITY_H
-	struct per_name {
+	static struct per_name {
 		char *name;
 		unsigned long per;
 	} pername[] = {
@@ -3224,6 +3230,7 @@ signed long lxc_config_parse_arch(const char *arch)
 		{ "ppc",       PER_LINUX32 },
 		{ "powerpc",   PER_LINUX32 },
 		{ "x86",       PER_LINUX32 },
+		{ "aarch64",   PER_LINUX   },
 		{ "amd64",     PER_LINUX   },
 		{ "arm64",     PER_LINUX   },
 		{ "linux64",   PER_LINUX   },
@@ -3236,14 +3243,16 @@ signed long lxc_config_parse_arch(const char *arch)
 		{ "s390x",     PER_LINUX   },
 		{ "x86_64",    PER_LINUX   },
 	};
-	size_t len = sizeof(pername) / sizeof(pername[0]);
 
-	for (int i = 0; i < len; i++)
-		if (strequal(pername[i].name, arch))
-			return pername[i].per;
-#endif
+	for (int i = 0; i < ARRAY_SIZE(pername); i++) {
+		if (!strequal(pername[i].name, arch))
+			continue;
 
-	return LXC_ARCH_UNCHANGED;
+		*persona = pername[i].per;
+		return 0;
+	}
+
+	return ret_errno(EINVAL);
 }
 
 int lxc_fill_elevated_privileges(char *flaglist, int *flags)
@@ -3724,7 +3733,6 @@ static int get_config_personality(const char *key, char *retv, int inlen,
 	else
 		memset(retv, 0, inlen);
 
-#if HAVE_SYS_PERSONALITY_H
 	int len = 0;
 
 	switch (c->personality) {
@@ -3737,7 +3745,6 @@ static int get_config_personality(const char *key, char *retv, int inlen,
 	default:
 		break;
 	}
-#endif
 
 	return fulllen;
 }
@@ -5005,7 +5012,7 @@ static inline int clr_config_rootfs_options(const char *key, struct lxc_conf *c,
 					    void *data)
 {
 	free_disarm(c->rootfs.options);
-	free_disarm(c->rootfs.data);
+	put_lxc_mount_options(&c->rootfs.mnt_opts);
 
 	return 0;
 }
